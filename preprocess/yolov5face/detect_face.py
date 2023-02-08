@@ -116,7 +116,7 @@ def detect(
     vid_path, vid_writer = [None] * bs, [None] * bs
     
     for path, im, im0s, vid_cap in dataset:
-        
+        oh,ow , _= im0s.shape
         if len(im.shape) == 4:
             orgimg = np.squeeze(im.transpose(0, 2, 3, 1), axis= 0)
         else:
@@ -125,6 +125,7 @@ def detect(
         orgimg = cv2.cvtColor(orgimg, cv2.COLOR_BGR2RGB)
         img0 = copy.deepcopy(orgimg)
         h0, w0 = orgimg.shape[:2]  # orig hw
+        
         r = img_size / max(h0, w0)  # resize image to img_size
         if r != 1:  # always resize down, only resize up if training with augmentation
             interp = cv2.INTER_AREA if r < 1  else cv2.INTER_LINEAR
@@ -148,7 +149,8 @@ def detect(
         # Apply NMS
         pred = non_max_suppression_face(pred, conf_thres, iou_thres)
         print(len(pred[0]), 'face' if len(pred[0]) == 1 else 'faces')
-
+        highestconf = 0
+        bestbox = None
         # Process detections
         for i, det in enumerate(pred):  # detections per image
             
@@ -181,10 +183,13 @@ def detect(
                     bbox= [xyxy,float(conf)]
                 print(bbox)
                 left, top, right, bottom = bbox[0]
-                left, top, right, bottom  = (left/w0), top/h0, right/w0, bottom/h0
+                left, top, right, bottom  = (left/ow), top/oh, right/ow, bottom/oh
                 print(left, top)
-                file = open( path.rsplit(os.sep,1)[0]+ os.sep + "faceboxes.txt","a")#append mode
-                file.write(path.split(os.sep)[-1] + ' ' + str(left)+ ' ' + str(top) + ' ' + str(right) + ' ' + str(bottom) +" \n")
+                if(conf>highestconf):
+                    bestbox = [left, top, right, bottom]
+                    conf = highestconf
+            file = open( path.rsplit(os.sep,1)[0]+ os.sep + "faceboxes.txt","a")#append mode
+            file.write(path.split(os.sep)[-1] + ' ' + str(left)+ ' ' + str(top) + ' ' + str(right) + ' ' + str(bottom) +" \n")
             if view_img:
                 cv2.imshow('result', im0)
                 k = cv2.waitKey(1)

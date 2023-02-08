@@ -22,7 +22,7 @@ def detect_text(imgs, savepath, ):
         im = cv2.imread(img)
         res, preds= handdet.detect(im)
         res = highestconf(res)
-
+        
         file = open(os.getcwd()+ os.sep+savepath + os.sep + "handboxes.txt","a")#append mode
         h,w,c = im.shape
         for det in res:
@@ -44,9 +44,9 @@ def highestconf(dets):
     highestconf1 = 0 
     highestconfs  = [0,0]
     for det in dets:
-        print(det)
+        #print(det)
         conf = det['conf']
-        print(conf)
+        #print(conf)
         if(conf>highestconf):
             highestconf = conf
             highestconfs[1] = highestconfs[0]
@@ -75,10 +75,10 @@ if __name__ == '__main__':
     target = sys.argv[1]
     savepath = sys.argv[2]
     if osp.isdir(target):
-        imgs = [osp.join(target, f) for f in sorted(os.listdir(target))]
+        imgs = [osp.join(target, f) for f in sorted(os.listdir(target)) if ".jpg" in f]
     elif osp.isfile(target):
         imgs = [target]
-
+    print(len(imgs))
     #detect_demo(imgs, savepath)
     detect_text(imgs, savepath)
     #crop_demo(imgs[0])
