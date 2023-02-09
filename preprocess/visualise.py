@@ -1,60 +1,38 @@
 import os
-from pathlib import Path
-import glob 
+import glob
+import torch
 import cv2
-path = 'val'
+paths = ['val']
+for path in paths: #loop through parent folders ie [train, val, test]
+    folders = next(os.walk(path))[1]
+    for folder in folders:
+        os.makedirs( path+ "_visualise"+os.sep + folder , exist_ok=True)
+        with open(path+ os.sep + folder + os.sep + 'pose.txt') as f:
+            lines = f.readlines()
+        
+        for line in lines:
 
-folderss = next(os.walk(path))[1]
-folders = []
-for f in folderss:
-    if("_viz" not in f):
-        folders.append(f)
-
-for folder in folders:
-    print(folder)
-    Path(path + os.sep + folder + "_viz").mkdir(parents=True, exist_ok=True)
-    
-    with open(path + os.sep + folder+ os.sep + 'bodyboxes.txt') as f:
-        bodylines = f.readlines()
-        bodyboxes = []
-        for l in bodylines:
-            bodyboxes.append(l.split(' '))
-    f.close()
-    
-    with open(path + os.sep + folder+ os.sep + 'handboxes.txt') as f:
-        handlines = f.readlines()
-        handboxes = []
-        for l in handlines:
-            handboxes.append(l.split(' '))
-    f.close()
-    
-    with open(path + os.sep + folder+ os.sep + 'faceboxes.txt') as f:
-        facelines = f.readlines()
-        faceboxes = []
-        for l in facelines:
-            faceboxes.append(l.split(' '))
-    f.close()
-    #print(len(faceboxes))
-
-    allboxes = faceboxes + handboxes + bodyboxes
-    #print(len(allboxes))
-    imgs = glob.glob(path + os.sep + folder + os.sep + "*.jpg")
-   # print(imgs)
-    for img in imgs:
-        boxes = []
-        for b in allboxes:
+            line = [l for l in line.replace(',',"").split(' ') if l != '' and l != '\n']
+            imgpath = line[0]
+            line = line[1:]
+            line = [int(float(l)) for l in line]
+            print(line)
+            print()
+            img = cv2.imread(path + os.sep + folder + os.sep + imgpath)
+            #line [imgpath [0], [y,x, conf][1], ...[4], ... [52], headlb[54], headrt,lhandlb[58], lhandrt, rhandlb[62], rhandrt, bboxlb[66], bboxrt[68] ]
+            print(len(line))
             
-            #print(b, img.split(os.sep)[-1])
-            if(img.split(os.sep)[-1] == b[0]):
-
-                boxes.append(b[1:5])
-
-        image= cv2.imread(img)
-        h,w,c = image.shape
-
-        for b in boxes:
- 
-            start = [int(float(b[0])*w), int(float(b[1])*h)]
-            end = [int(float(b[2])*w), int(float(b[3])*h)]
-            image = cv2.rectangle(image, start, end, (100,100,100), 2)
-        cv2.imwrite(path + os.sep + folder + "_viz" + os.sep + img.split(os.sep)[-1], image)
+            posepoints = line[0:51]
+            head = line[51:55]
+            lhand =line[55:59]
+            rhand = line[59:63]
+            bodybbox = line[63:]
+            print(bodybbox)
+            if(len(line)>1):
+                crop = img[bodybbox[0]:bodybbox[2], bodybbox[1]:bodybbox[3]]
+                crop = cv2.rectangle(crop, [head[0], head[1]], [head[2], head[3]] , (100,40,20))
+                crop = cv2.rectangle(crop, [lhand[0], lhand[1]], [lhand[2], lhand[3]] , (100,40,20))
+                crop = cv2.rectangle(crop, [rhand[0], rhand[1]], [rhand[2], rhand[3]] , (100,40,20))
+                for i in range(0,51,3):
+                    crop = cv2.circle(crop, (posepoints[i+1],posepoints[i]), radius=1, color=(0, 0, 255), thickness=1)
+                cv2.imwrite(path+ "_visualise"+os.sep + folder +os.sep + imgpath,crop)
