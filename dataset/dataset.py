@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
-from pipelines.sampleframes import SampleFrames
-from pipelines.readpose import ReadPose
+from .pipelines.sampleframes import SampleFrames
+from .pipelines.readpose import ReadPose
 import os.path as osp
 from PIL import Image
 
