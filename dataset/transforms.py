@@ -132,7 +132,7 @@ class transform:
                 print(padimage.shape)
                 padimage[x0:x1,y0:y1] = img
                 
-                img = padimage
+                img = padimage.copy()
             print(img.shape)
             rgbcrop.append(Image.fromarray(img))
             

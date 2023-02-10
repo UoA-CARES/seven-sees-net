@@ -16,7 +16,7 @@ dataset = MultiModalDataset(ann_file='data/rawframes/annotations.txt',
                             num_clips=1
                             )
 
-dataset.visualise(key = 'rgbcrop')
+dataset.visualise(key = 'head')
 
 test_loader = DataLoader(dataset, batch_size=1, shuffle=True)
 

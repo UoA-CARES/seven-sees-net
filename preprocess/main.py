@@ -139,14 +139,16 @@ for path in paths: #loop through parent folders ie [train, val, test]
                     for j in i:
                         file.write(str(j)+ ' ')
                 #head bounding box
-                
-                file.write(", " + str(headbotleft[0]) + ' ' + str(headbotleft[1]))
                 file.write(", " + str(headtopright[0]) + ' ' + str(headtopright[1]))
+                file.write(", " + str(headbotleft[0]) + ' ' + str(headbotleft[1]))
+                
                 #left and right hand bounding box
-                file.write(", " + str(leftwristbboxbotleft [0]) + ' ' + str(leftwristbboxbotleft [1]))
+               
                 file.write(", " + str(leftwristbboxtopright[0]) + ' ' + str(leftwristbboxtopright[1]))
-                file.write(", " + str(rightwristbboxbotleft[0]) + ' ' + str(rightwristbboxbotleft[1]))
+                file.write(", " + str(leftwristbboxbotleft [0]) + ' ' + str(leftwristbboxbotleft [1]))
+               
                 file.write(", " + str(rightwristbboxtopright[0]) + ' ' + str(rightwristbboxtopright[1]))
+                file.write(", " + str(rightwristbboxbotleft[0]) + ' ' + str(rightwristbboxbotleft[1]))
                 #body bounding box
                 file.write(", "  )
                 file.write(str(x0)+ " " + str(y0)+ ", "+ str(x1)+ " "+ str(y1)+ " " )

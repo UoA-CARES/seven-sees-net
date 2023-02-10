@@ -34,6 +34,7 @@ for path in paths: #loop through parent folders ie [train, val, test]
            
                 if(len(line)>1):
                     crop = img[bodybbox[0]:bodybbox[2], bodybbox[1]:bodybbox[3]]
+                    print(head)
                     crop = cv2.rectangle(crop, [head[0], head[1]], [head[2], head[3]] , (100,40,20))
                     crop = cv2.rectangle(crop, [lhand[0], lhand[1]], [lhand[2], lhand[3]] , (100,40,20))
                     crop = cv2.rectangle(crop, [rhand[0], rhand[1]], [rhand[2], rhand[3]] , (100,40,20))
