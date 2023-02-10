@@ -180,13 +180,13 @@ class MultiModalDataset(Dataset):
             results = self.transforms(results)
         
         rgbcrop = results['rgbcrop']
-        tensor = self.img2tensorTransforms(rgbcrop[0]).unsqueeze(dim=1)
-        for i,img in enumerate(rgbcrop):
-            img = rgbcrop[i]
-            print(img.size)
-            img = self.img2tensorTransforms(img)
-            print(img.shape)
-            tensor = torch.cat((tensor, img), dim = 1)
+        image_tensors = []
+        for img in rgbcrop:
+            image_tensors.append(self.img2tensorTransforms(img).unsqueeze(dim=1))
+
+        print(type(img))
+
+        tensor = torch.cat(image_tensors, dim = 1)
 
         label = torch.tensor(results['label'])
 
