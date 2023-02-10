@@ -99,13 +99,15 @@ class transform:
                     frame = TF.adjust_sharpness(frame, sharpness)               
                     frames[modality][i] = frame
         return frames
-    def crop(self,frames, cropname, posekey):
+        
+    def crop(self,frames, posekey):
         rgbcrop =[]
-        rgb = frames['rgb']
+        rgb = frames['rgb'] if posekey == 'body_bbox' else frames['body_bbox']
         w,h = rgb[0].size
         print(w,h)
         for i, frame in enumerate(rgb):
-            img =  np.array(frame).copy() 
+            img =  np.array(frame)           
+
             bodybbox = frames['pose'][i][posekey]
             pad = 0
             print(posekey,bodybbox, i)
@@ -125,31 +127,53 @@ class transform:
             if(y1>h):
                 y1=h
                 pad = 1
-
-            img = img[int(x0):int(x1), int(y0):int(y1)]
+            print(bodybbox, x0, y0, x1,y1)
+            ######################################### TEMP FIX ########## fix preprocess/main
+            if(posekey=='head'):
+                x1a = x1
+                x1 = y1
+                y1a = y1
+                y1 = x1a
+                
+                x0a = x0
+                x0= y0
+                y0a = y0
+                y0  = x0a
+            x1 = int(x1)
+            y0 = int(y0)
+            y1 = int(y1)
+            x0 = int(x0)             
+            ###########################################
+            #img = cv2.rectangle(img, (x0,y0), (x1,y1), (40,100,0),1)
+            #cv2.imshow("", img)
+            #cv2.waitKey(0)
+            
+            img = img[x0:x1, y0:y1].copy()
             if(pad):
                 padimage = np.zeros((h,w,3), np.uint8)
-                print(padimage.shape)
+
+               
                 padimage[x0:x1,y0:y1] = img
                 
                 img = padimage.copy()
             print(img.shape)
             rgbcrop.append(Image.fromarray(img))
             
-        frames[cropname]= rgbcrop
+        frames[posekey]= rgbcrop
         return frames
     def __call__(self, frames):
+        #rgb only transforms
+        frames = self.rgbtransforms(frames, ['rgb'])
+        frames = self.depthtransforms(frames, ['depth'])
+        frames = self.flowtransforms(frames, ['flow'])
         #crop human bounding box
-        frames = self.crop(frames, 'rgbcrop', 'body_bbox')
-        frames = self.crop(frames, 'head', 'head')
-        frames = self.crop(frames, 'right_hand', 'right_hand')
-        frames = self.crop(frames, 'left_hand', 'left_hand')
+        frames = self.crop(frames, 'body_bbox')
+        frames = self.crop(frames, 'head')
+        frames = self.crop(frames, 'right_hand')
+        frames = self.crop(frames, 'left_hand')
         #global transforms apllied identically to all modalities (rgb, depth, flow)
         #frames = self.rotation(frames, 30, modalities)  #NEEDS POSE ROTATION
         
-        frames = self.flip(frames, ['rgb','depth', 'flow', 'pose', 'rgbcrop', 'head', 'right_hand','left_hand'])
-        #rgb only transforms
-        frames = self.rgbtransforms(frames, ['rgb','rgbcrop'])
-        frames = self.depthtransforms(frames, ['depth'])
-        frames = self.flowtransforms(frames, ['flow'])
+        frames = self.flip(frames, ['rgb','depth', 'flow', 'pose', 'body_bbox', 'head', 'right_hand','left_hand'])
+
         return frames

@@ -59,7 +59,10 @@ for path in paths: #loop through parent folders ie [train, val, test]
     os.chdir('ViTPose')
     for folder in folders: #loop through videos ie [0,1,2,3]
         os.makedirs(cwd + os.sep + path+ "_viz"+os.sep + folder , exist_ok=True)
-        
+        try:
+            os.remove(cwd + os.sep + path + os.sep + folder + os.sep + "pose.txt")
+        except:
+            pass
         file = open( cwd + os.sep + path + os.sep + folder + os.sep + "pose.txt","a")#append mode
         ## body bounding box (yolov5)
         allhumanbboxes = labelpersons(yolov5model ,cwd+ os.sep + path+os.sep + folder,[0])
@@ -139,8 +142,8 @@ for path in paths: #loop through parent folders ie [train, val, test]
                     for j in i:
                         file.write(str(j)+ ' ')
                 #head bounding box
-                file.write(", " + str(headtopright[0]) + ' ' + str(headtopright[1]))
-                file.write(", " + str(headbotleft[0]) + ' ' + str(headbotleft[1]))
+                file.write(", " + str(headtopright[1]) + ' ' + str(headtopright[0]))
+                file.write(", " + str(headbotleft[1]) + ' ' + str(headbotleft[0]))
                 
                 #left and right hand bounding box
                

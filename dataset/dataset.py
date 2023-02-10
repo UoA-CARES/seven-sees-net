@@ -162,13 +162,13 @@ class MultiModalDataset(Dataset):
         
 
 
-    def visualise(self, idx=0, key = 'rgbcrop'):
+    def visualise(self, idx=0, key = 'body_bbox'):
         results = self.load_video(idx=idx)
         results = self.transforms(results)  
         for i in range(len(results[key])): 
             img = results[key][i]
             img =  np.array(img)[:, :, ::-1].copy() 
-            if(key=='rgbcrop'):
+            if(key=='body_bbox'):
                 keypoints = results['pose'][i]['keypoints']
                 for j in keypoints:
                     img = cv2.circle(img, (int(keypoints[j]['x']), int(keypoints[j]['y'])), radius=1, color=(0, 0, 255), thickness=1)
@@ -181,18 +181,35 @@ class MultiModalDataset(Dataset):
             image_tensors.append(self.img2tensorTransforms(img).unsqueeze(dim=1))
         tensor = torch.cat(image_tensors, dim = 1)
         return tensor
-
+    def pose2tensor(self, pose):
+        points =[]
+        for posen in pose:
+            keypoints = posen['keypoints']           
+            for i, point in enumerate(keypoints):
+                points.append(keypoints[point]['x'])
+                points.append(keypoints[point]['y'])
+                points.append(keypoints[point]['confidence'])
+        
+        tensor = torch.tensor(points)
+        return tensor
     def __getitem__(self, idx):
+        #['rgb','depth', 'flow', 'pose', 'body_bbox', 'head', 'right_hand','left_hand']
         results = self.load_video(idx=idx)
         if(self.transforms != None):
             results = self.transforms(results)
+            
+        rgb = self.to_3dtensor(results['rgb'])
+        body_bbox = self.to_3dtensor(results['body_bbox'])
+        head = self.to_3dtensor(results['head'])
+        left_hand = self.to_3dtensor(results['left_hand'])
+        right_hand = self.to_3dtensor(results['right_hand'])
+        depth  =  self.to_3dtensor(results['depth'])
+        flow  =  self.to_3dtensor(results['flow'])
         
-        rgbcrop = self.to_3dtensor(results['rgbcrop'])
-
-
-
+        pose =self.pose2tensor(results['pose'])
+        
         label = torch.tensor(results['label'])
-
-        return rgbcrop, label
+    
+        return rgb, body_bbox, head, left_hand, right_hand, depth, flow,  pose, label
 
         
