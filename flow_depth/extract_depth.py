@@ -36,7 +36,7 @@ def get_depth(img):
    
         prediction = torch.nn.functional.interpolate(
             prediction.unsqueeze(1),            
-            size=tuple(img.shape[2:]),
+            size=tuple((256,256)),
             mode="bicubic",
             align_corners=False,
         ).squeeze()
