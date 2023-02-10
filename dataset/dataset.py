@@ -1,8 +1,13 @@
 from torch.utils.data import Dataset
+import torchvision.transforms as transform
+import torch
+
 from .pipelines.sampleframes import SampleFrames
 from .pipelines.readpose import ReadPose
 import os.path as osp
 from PIL import Image
+import numpy as np
+import cv2
 
 class MultiModalDataset(Dataset):
     """Samples frames using MMAction's SampleFrames and handles multimodal 
@@ -34,6 +39,8 @@ class MultiModalDataset(Dataset):
                 ann_file,
                 root_dir,
                 clip_len,
+                resolution,
+                transforms=None,
                 frame_interval=1,
                 num_clips=1,
                 rgb_prefix =  'img_{:05}.jpg',
@@ -45,6 +52,8 @@ class MultiModalDataset(Dataset):
         self.rgb_prefix = rgb_prefix
         self.flow_prefix = flow_prefix
         self.depth_prefix = depth_prefix
+        self.transforms = transforms
+        self.resolution = resolution
 
         self.video_infos = self.load_annotations()
         self.read_pose = ReadPose()
@@ -52,12 +61,20 @@ class MultiModalDataset(Dataset):
                                         frame_interval=frame_interval,
                                         num_clips=num_clips)
 
+        self.img2tensorTransforms = transform.Compose(
+                                                [
+                                                    transform.Resize((self.resolution,self.resolution)),
+                                                    transform.ToTensor(),
+                                                ]
+                                            )
 
+    def __len__(self):
+        return self.numvideos 
     def load_annotations(self):
         """Load annotation file to get video information."""
         video_infos = []
         with open(self.ann_file, 'r') as fin:
-            for line in fin:
+            for i, line in enumerate(fin):
                 line_split = line.strip().split()
 
                 video_info = dict()
@@ -66,7 +83,7 @@ class MultiModalDataset(Dataset):
                 video_info['total_frames'] = int(line_split[1])
                 video_info['label'] = int(line_split[2])
                 video_infos.append(video_info)
-
+            self.numvideos = i + 1
         return video_infos
 
     def load_pose(self, video_path):
@@ -145,4 +162,34 @@ class MultiModalDataset(Dataset):
         
 
 
-    
+    def visualise(self, idx=0):
+        results = self.load_video(idx=idx)
+        results = self.transforms(results)  
+        for i in range(len(results['rgbcrop'])): 
+            img = results['rgbcrop'][i]
+            img =  np.array(img)[:, :, ::-1].copy() 
+            keypoints = results['pose'][i]['keypoints']
+            for j in keypoints:
+                img = cv2.circle(img, (int(keypoints[j]['x']), int(keypoints[j]['y'])), radius=1, color=(0, 0, 255), thickness=1)
+            cv2.imshow("", img)
+            cv2.waitKey(0)
+
+    def __getitem__(self, idx):
+        results = self.load_video(idx=idx)
+        if(self.transforms != None):
+            results = self.transforms(results)
+        
+        rgbcrop = results['rgbcrop']
+        tensor = self.img2tensorTransforms(rgbcrop[0]).unsqueeze(dim=1)
+        for i,img in enumerate(rgbcrop):
+            img = rgbcrop[i]
+            print(img.size)
+            img = self.img2tensorTransforms(img)
+            print(img.shape)
+            tensor = torch.cat((tensor, img), dim = 1)
+
+        label = torch.tensor(results['label'])
+
+        return tensor, label
+
+        

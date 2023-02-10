@@ -1,35 +1,24 @@
 from dataset.dataset import MultiModalDataset
 from dataset.transforms import transform
+from torch.utils.data import DataLoader
+
 from PIL import Image, ImageDraw
 import numpy as np
 import cv2
+
+transforms = transform()
 dataset = MultiModalDataset(ann_file='data/rawframes/annotations.txt',
                             root_dir='data/rawframes/test',
                             clip_len=32,
+                            resolution=224,
+                            transforms = transforms,
                             frame_interval=1,
-                            num_clips=1)
+                            num_clips=1
+                            )
 
-results = dataset.load_video(idx=2)
-#results = transform(results)  
-def visualise(results):
-    imgs= []
-    for i in range(len(results['rgb'])): 
-        img = results['rgb'][i]
-        img =  np.array(img)[:, :, ::-1].copy() 
-        #crop
-        bodybbox = results['pose'][i]['body_bbox']
-        img = img[int(bodybbox[0]):int(bodybbox[2]), int(bodybbox[1]):int(bodybbox[3])]
-    
+#dataset.visualise()
 
-        keypoints = results['pose'][i]['keypoints']
+test_loader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-        for j in keypoints:
-            img = cv2.circle(img, (int(keypoints[j]['x']), int(keypoints[j]['y'])), radius=1, color=(0, 0, 255), thickness=1)
-    
-
-        cv2.imshow("", img)
-        cv2.waitKey(0)
-
-
-
-visualise(results)
+crop, label = next(iter(test_loader))   
+print(crop.shape, label)

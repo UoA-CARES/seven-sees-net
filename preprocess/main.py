@@ -63,23 +63,39 @@ for path in paths: #loop through parent folders ie [train, val, test]
         file = open( cwd + os.sep + path + os.sep + folder + os.sep + "pose.txt","a")#append mode
         ## body bounding box (yolov5)
         allhumanbboxes = labelpersons(yolov5model ,cwd+ os.sep + path+os.sep + folder,[0])
+        #expand to largest box so no bounding box jitter
+        xmin =100000000
+        ymin =100000000
+        xmax =0
+        ymax =0
+
+        for humanbbox in allhumanbboxes: #find furtherest extents of bounding boxes
+            if(len(humanbbox[1])>0):
+                x0,x1 = int(humanbbox[1][0]),int(humanbbox[1][2])
+                y0,y1 = int(humanbbox[1][1]),int(humanbbox[1][3])
+                if(x0<xmin):
+                    xmin =x0
+                if(y0<ymin):
+                    ymin = y0
+                if(x1>xmax):
+                    xmax = x1
+                if(y1>ymax):
+                    ymax = y1
+
+        expand = 1.05 # %
+        width = xmax-xmin
+        height = ymax - ymin
+        maxside = max(width , height) * expand    
+        centerx = xmin + width/2
+        centery = ymin + height/2         
+        x0,x1 = int(centerx - maxside/2), int(centerx + maxside/2)
+        y0,y1 = int(centery - maxside/2), int(centery + maxside/2)
+        largestbox = [x0,x1,y0,y1]
 
         for bboxn, humanbbox in enumerate(allhumanbboxes ): #loop through images in video folder [frame0, frame1, frame2]
             if(len(humanbbox[1])>0):
-                img = cv2.imread(cwd + os.sep + path + os.sep + folder + os.sep + humanbbox[0])
-                x0,x1 = int(humanbbox[1][0]),int(humanbbox[1][2])
-                y0,y1 = int(humanbbox[1][1]),int(humanbbox[1][3])
-                expand = 1.05 # %
-                width = x1-x0
-                height = y1-y0
-                centerx = x0 + width/2
-                centery = y0 + height/2
-                maxside = max(width , height) * expand
-                x0,x1 = int(centerx - maxside/2), int(centerx + maxside/2)
-                y0,y1 = int(centery - maxside/2), int(centery + maxside/2)
-
-                crop = img[x0:x1,y0:y1]#cv2.rectangle(img, [x0,y0],[x1,y1], (100,40,20))
-
+                img = cv2.imread(cwd + os.sep + path + os.sep + folder + os.sep + humanbbox[0])            
+                crop = img[largestbox[0]:largestbox[1],largestbox[2]:largestbox[3]]#cv2.rectangle(img, [x0,y0],[x1,y1], (100,40,20))
                 points = vitpose.inference(crop)    
   
                 h,w,c = img.shape
