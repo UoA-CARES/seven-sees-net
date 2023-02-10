@@ -25,18 +25,28 @@ def rotation(frames, rotation, modalities):
             
     return frames
 def flip(frames, modalities):
-    flip = random.random() > 0.5
-    for modality in modalities:
-        if(modality in frames and modality!= 'pose'):
-            rgb = frames[modality]
-            for i, frame in enumerate(rgb):
-                if(flip):
-                    frame = TF.hflip(frame)
-                    frames[modality][i] = frame
-        elif(modality == 'pose'):
-            pose = frames['pose']
-            width, height = frames[modality][0].size
-            
+    flip = 1#random.random() > 0.5
+    if(flip):
+        for modality in modalities:
+            if(modality in frames and modality!= 'pose'):
+                rgb = frames[modality]
+                for i, frame in enumerate(rgb):
+                        frame = TF.hflip(frame)
+                        frames[modality][i] = frame
+            elif(modality == 'pose' and len(frames['pose'])>0 ):
+                width = frames['pose'][0]['body_bbox'][2] -frames['pose'][0]['body_bbox'][0] 
+                print(width) 
+                poseframes= frames['pose']
+                for idx,frame in enumerate(poseframes):
+                    keypoints = frame['keypoints']
+                    for keypoint in keypoints:
+                        x = keypoints[keypoint]['x']
+                        newx = width - x -1
+                        frames['pose'][idx]['keypoints'][keypoint]['x'] = newx
+
+                
+
+
     return frames
 
 def rgbtransforms(frames, modalities):
