@@ -112,8 +112,8 @@ for path in paths: #loop through parent folders ie [train, val, test]
                 headrightx, headrigthy = points[4][1],points[4][0]
                 offsety = headwidth/1.5
                 offsetx = (((offsety * 2) - headwidth)/2)
-                headbotleft = [int(headleftx-offsetx),int( headlefty+offsety)]
-                headtopright = [int(headrightx+offsetx), int(headrigthy-offsety)]
+                headbotleft = [int(headleftx-offsetx),int( headlefty-offsety)]
+                headtopright = [int(headrightx+offsetx), int(headrigthy+offsety)]
                 crop= cv2.rectangle(crop, headbotleft, headtopright , (100,40,20))
 
                 

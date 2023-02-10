@@ -162,34 +162,37 @@ class MultiModalDataset(Dataset):
         
 
 
-    def visualise(self, idx=0):
+    def visualise(self, idx=0, key = 'rgbcrop'):
         results = self.load_video(idx=idx)
         results = self.transforms(results)  
-        for i in range(len(results['rgbcrop'])): 
-            img = results['rgbcrop'][i]
+        for i in range(len(results[key])): 
+            img = results[key][i]
             img =  np.array(img)[:, :, ::-1].copy() 
-            keypoints = results['pose'][i]['keypoints']
-            for j in keypoints:
-                img = cv2.circle(img, (int(keypoints[j]['x']), int(keypoints[j]['y'])), radius=1, color=(0, 0, 255), thickness=1)
+            if(key=='rgbcrop'):
+                keypoints = results['pose'][i]['keypoints']
+                for j in keypoints:
+                    img = cv2.circle(img, (int(keypoints[j]['x']), int(keypoints[j]['y'])), radius=1, color=(0, 0, 255), thickness=1)
             cv2.imshow("", img)
             cv2.waitKey(0)
+
+    def to_3dtensor(self, images):
+        image_tensors = []
+        for img in images:
+            image_tensors.append(self.img2tensorTransforms(img).unsqueeze(dim=1))
+        tensor = torch.cat(image_tensors, dim = 1)
+        return tensor
 
     def __getitem__(self, idx):
         results = self.load_video(idx=idx)
         if(self.transforms != None):
             results = self.transforms(results)
         
-        rgbcrop = results['rgbcrop']
-        image_tensors = []
-        for img in rgbcrop:
-            image_tensors.append(self.img2tensorTransforms(img).unsqueeze(dim=1))
+        rgbcrop = self.to_3dtensor(results['rgbcrop'])
 
-        print(type(img))
 
-        tensor = torch.cat(image_tensors, dim = 1)
 
         label = torch.tensor(results['label'])
 
-        return tensor, label
+        return rgbcrop, label
 
         

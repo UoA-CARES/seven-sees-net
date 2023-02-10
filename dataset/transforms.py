@@ -99,24 +99,55 @@ class transform:
                     frame = TF.adjust_sharpness(frame, sharpness)               
                     frames[modality][i] = frame
         return frames
-    def crop(self,frames):
+    def crop(self,frames, cropname, posekey):
         rgbcrop =[]
         rgb = frames['rgb']
+        w,h = rgb[0].size
+        print(w,h)
         for i, frame in enumerate(rgb):
             img =  np.array(frame).copy() 
-            bodybbox = frames['pose'][i]['body_bbox']
-            img = img[int(bodybbox[0]):int(bodybbox[2]), int(bodybbox[1]):int(bodybbox[3])]
+            bodybbox = frames['pose'][i][posekey]
+            pad = 0
+            print(posekey,bodybbox, i)
+            x0 = bodybbox[0]
+            if(x0<0):
+                x0 = 0
+                pad = 1
+            x1 = bodybbox[2]
+            if(x1>w):
+                x1 = w
+                pad = 1
+            y0 = bodybbox[1]
+            if(y0<0):
+                y0=0
+                pad = 1
+            y1 = bodybbox[3]
+            if(y1>h):
+                y1=h
+                pad = 1
+
+            img = img[int(x0):int(x1), int(y0):int(y1)]
+            if(pad):
+                padimage = np.zeros((h,w,3), np.uint8)
+                print(padimage.shape)
+                padimage[x0:x1,y0:y1] = img
+                
+                img = padimage
+            print(img.shape)
             rgbcrop.append(Image.fromarray(img))
             
-        frames['rgbcrop']= rgbcrop
+        frames[cropname]= rgbcrop
         return frames
     def __call__(self, frames):
         #crop human bounding box
-        frames = self.crop(frames)
+        frames = self.crop(frames, 'rgbcrop', 'body_bbox')
+        frames = self.crop(frames, 'head', 'head')
+        frames = self.crop(frames, 'right_hand', 'right_hand')
+        frames = self.crop(frames, 'left_hand', 'left_hand')
         #global transforms apllied identically to all modalities (rgb, depth, flow)
         #frames = self.rotation(frames, 30, modalities)  #NEEDS POSE ROTATION
         
-        frames = self.flip(frames, ['rgb','depth', 'flow', 'pose', 'rgbcrop'])
+        frames = self.flip(frames, ['rgb','depth', 'flow', 'pose', 'rgbcrop', 'head', 'right_hand','left_hand'])
         #rgb only transforms
         frames = self.rgbtransforms(frames, ['rgb','rgbcrop'])
         frames = self.depthtransforms(frames, ['depth'])

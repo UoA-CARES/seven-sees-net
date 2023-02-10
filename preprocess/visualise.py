@@ -41,3 +41,7 @@ for path in paths: #loop through parent folders ie [train, val, test]
                         crop = cv2.circle(crop, (posepoints[i+1],posepoints[i]), radius=1, color=(0, 0, 255), thickness=1)
                     cv2.imwrite(path+ "_visualise"+os.sep + folder +os.sep + imgpath,crop)
             except Exception as e: print(e)
+
+    
+
+   
