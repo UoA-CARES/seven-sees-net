@@ -152,9 +152,9 @@ class transform:
             if(pad):
                 padimage = np.zeros((h,w,3), np.uint8)
                 
-                h,w,c = img.size
-                if((x1-x0) != w or (y0-y1) != h):
-                    img = cv2.resize(img, (w,h))
+                h0,w0,c = img.shape
+                if((x1-x0) != w or (y1-y0) != h0):
+                    img = cv2.resize(img, (w0,h0))
                 padimage[x0:x1,y0:y1] = img
                 
                 img = padimage.copy()
