@@ -33,6 +33,8 @@ class MultiModalDataset(Dataset):
         rgb_prefix (str): File format for rgb image files.
         flow_prefix (str): File format for flow image files.
         depth_prefix (str): File format for depth image files.
+        test_mode (bool): Store True when building test or validation dataset.
+            Default: False.
     """
 
     def __init__(self,                
@@ -45,15 +47,18 @@ class MultiModalDataset(Dataset):
                 num_clips=1,
                 rgb_prefix =  'img_{:05}.jpg',
                 flow_prefix = 'flow_{:05}.jpg',
-                depth_prefix = 'depth_{:05}.jpg'):
+                depth_prefix = 'depth_{:05}.jpg',
+                test_mode=False):
 
         self.ann_file = ann_file
         self.root_dir = root_dir
         self.rgb_prefix = rgb_prefix
         self.flow_prefix = flow_prefix
         self.depth_prefix = depth_prefix
+        self.test_mode = test_mode
         self.transforms = transforms
         self.resolution = resolution
+        
 
         self.video_infos = self.load_annotations()
         self.read_pose = ReadPose()

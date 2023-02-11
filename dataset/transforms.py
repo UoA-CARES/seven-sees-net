@@ -32,7 +32,7 @@ class transform:
                 elif(modality == 'pose' and len(frames['pose'])>0 ):
 
                     width = frames['pose'][0]['body_bbox'][2] -frames['pose'][0]['body_bbox'][0] 
-                    print(width) 
+                    # print(width) 
                     poseframes= frames['pose']
                     for idx,frame in enumerate(poseframes):
                         keypoints = frame['keypoints']
@@ -104,13 +104,13 @@ class transform:
         rgbcrop =[]
         rgb = frames['rgb'] if posekey == 'body_bbox' else frames['body_bbox']
         w,h = rgb[0].size
-        print(w,h)
+        # print(w,h)
         for i, frame in enumerate(rgb):
             img =  np.array(frame)           
 
             bodybbox = frames['pose'][i][posekey]
             pad = 0
-            print(posekey,bodybbox, i)
+            # print(posekey,bodybbox, i)
             x0 = bodybbox[0]
             if(x0<0):
                 x0 = 0
@@ -127,7 +127,7 @@ class transform:
             if(y1>h):
                 y1=h
                 pad = 1
-            print(bodybbox, x0, y0, x1,y1)
+            # print(bodybbox, x0, y0, x1,y1)
             ######################################### TEMP FIX ########## fix preprocess/main
             if(posekey=='head'):
                 x1a = x1
@@ -156,7 +156,7 @@ class transform:
                 padimage[x0:x1,y0:y1] = img
                 
                 img = padimage.copy()
-            print(img.shape)
+            # print(img.shape)
             rgbcrop.append(Image.fromarray(img))
             
         frames[posekey]= rgbcrop

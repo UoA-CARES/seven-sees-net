@@ -20,9 +20,7 @@ class ReadPose:
                 ]
 
     def __call__(self, line):
-        print(line)
         line = [l for l in line.replace(',',"").split(' ') if l != '' and l != '\n']
-        print(line)
         imgpath = line[0]
         line = line[1:]
         line = [float(l) for l in line]
@@ -36,12 +34,10 @@ class ReadPose:
         lhand =line[55:59]
         rhand = line[59:63]
         bodybbox = line[63:]
-        print(posepoints)
         pose_values = dict()
 
         for i in range(0, 51, 3):
             if len(posepoints) == 0:
-                print('No pose points found...')
                 pose_values[self.keypoints[i//3]] = dict(y = [],
                                             x=[],
                                             confidence=[])

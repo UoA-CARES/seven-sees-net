@@ -49,7 +49,7 @@ def getBbox(points):
         botright = [xmax, ymin]
     return topleft, botright
 
-paths = ['val']
+paths = ['val', 'train', 'test']
 
 vitpose = VitPose()
 cwd = os.getcwd()
