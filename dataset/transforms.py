@@ -104,7 +104,7 @@ class transform:
         rgbcrop =[]
         rgb = frames['rgb'] if posekey == 'body_bbox' else frames['body_bbox']
         w,h = rgb[0].size
-        # print(w,h)
+        print(w,h)
         for i, frame in enumerate(rgb):
             img =  np.array(frame)           
 
