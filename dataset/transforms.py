@@ -143,6 +143,17 @@ class transform:
             y0 = int(y0)
             y1 = int(y1)
             x0 = int(x0)             
+            
+            #ensure sqaure crop#
+            xwidth = x1-x0
+            ywidth = y1-y0
+            if(xwidth>ywidth):
+                xwidth = xwidth - (xwidth-ywidth)
+                x1 = x0 + xwidth
+            elif(ywidth>xwidth):
+                ywidth = ywidth - (ywidth-xwidth)
+                y1 = y0 + ywidth
+             
             ###########################################
             #img = cv2.rectangle(img, (x0,y0), (x1,y1), (40,100,0),1)
             #cv2.imshow("", img)
@@ -152,13 +163,15 @@ class transform:
             if(pad):
                 padimage = np.zeros((h,w,3), np.uint8)
                 
-                h0,w0,c = img.shape
-                if((x1-x0) != w or (y1-y0) != h0):
-                    img = cv2.resize(img, (w0,h0))
+
                 padimage[x0:x1,y0:y1] = img
                 
                 img = padimage.copy()
             # print(img.shape)
+            print(img.shape)
+            #ensure image size is not 0 #
+            if( img.shape[0] == 0 or img.shape == 0):
+                img = np.zeros((1,1,3), np.uint8)
             rgbcrop.append(Image.fromarray(img))
             
         frames[posekey]= rgbcrop
