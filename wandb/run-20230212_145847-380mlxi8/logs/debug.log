@@ -1,0 +1,26 @@
+2023-02-12 14:58:47,117 INFO    MainThread:12276 [wandb_setup.py:_flush():68] Configure stats pid to 12276
+2023-02-12 14:58:47,117 INFO    MainThread:12276 [wandb_setup.py:_flush():68] Loading settings from C:\Users\Edmond\.config\wandb\settings
+2023-02-12 14:58:47,117 INFO    MainThread:12276 [wandb_setup.py:_flush():68] Loading settings from D:\github\seven-sees-net\wandb\settings
+2023-02-12 14:58:47,117 INFO    MainThread:12276 [wandb_setup.py:_flush():68] Loading settings from environment variables: {'_require_service': 'True'}
+2023-02-12 14:58:47,117 INFO    MainThread:12276 [wandb_setup.py:_flush():68] Inferring run settings from compute environment: {'program_relpath': 'train.py', 'program': 'train.py'}
+2023-02-12 14:58:47,117 INFO    MainThread:12276 [wandb_init.py:_log_setup():476] Logging user logs to D:\github\seven-sees-net\wandb\run-20230212_145847-380mlxi8\logs\debug.log
+2023-02-12 14:58:47,118 INFO    MainThread:12276 [wandb_init.py:_log_setup():477] Logging internal logs to D:\github\seven-sees-net\wandb\run-20230212_145847-380mlxi8\logs\debug-internal.log
+2023-02-12 14:58:47,118 INFO    MainThread:12276 [wandb_init.py:init():516] calling init triggers
+2023-02-12 14:58:47,118 INFO    MainThread:12276 [wandb_init.py:init():519] wandb.init called with sweep_config: {}
+config: {}
+2023-02-12 14:58:47,118 INFO    MainThread:12276 [wandb_init.py:init():569] starting backend
+2023-02-12 14:58:47,118 INFO    MainThread:12276 [wandb_init.py:init():573] setting up manager
+2023-02-12 14:58:47,124 INFO    MainThread:12276 [backend.py:_multiprocessing_setup():102] multiprocessing start_methods=spawn, using: spawn
+2023-02-12 14:58:47,159 INFO    MainThread:12276 [wandb_init.py:init():580] backend started and connected
+2023-02-12 14:58:47,163 INFO    MainThread:12276 [wandb_init.py:init():658] updated telemetry
+2023-02-12 14:58:47,218 INFO    MainThread:12276 [wandb_init.py:init():693] communicating run to backend with 60 second timeout
+2023-02-12 14:58:50,428 WARNING MsgRouterThr:12276 [router.py:message_loop():77] message_loop has been closed
+2023-02-12 14:58:52,372 ERROR   MainThread:12276 [wandb_init.py:init():1105] error
+Traceback (most recent call last):
+  File "G:\anaconda\envs\open-mmlab\lib\site-packages\wandb\sdk\wandb_init.py", line 1078, in init
+    run = wi.init()
+  File "G:\anaconda\envs\open-mmlab\lib\site-packages\wandb\sdk\wandb_init.py", line 697, in init
+    result = handle.wait(
+  File "G:\anaconda\envs\open-mmlab\lib\site-packages\wandb\sdk\lib\mailbox.py", line 259, in wait
+    raise MailboxError("transport failed")
+wandb.errors.MailboxError: transport failed

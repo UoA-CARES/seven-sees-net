@@ -160,18 +160,19 @@ class transform:
             #cv2.waitKey(0)
             
             img = img[x0:x1, y0:y1].copy()
+            if( img.shape[0] == 0 or img.shape == 0):
+                img = np.zeros((1,1,3), np.uint8)
             if(pad):
                 padimage = np.zeros((h,w,3), np.uint8)
                 
-
-                padimage[x0:x1,y0:y1] = img
+                padh,padw , _ = img.shape
+                padimage[x0:x0+padw,y0:y0+padh] = img
                 
                 img = padimage.copy()
             # print(img.shape)
             # print(img.shape)
             #ensure image size is not 0 #
-            if( img.shape[0] == 0 or img.shape == 0):
-                img = np.zeros((1,1,3), np.uint8)
+
             rgbcrop.append(Image.fromarray(img))
             
         frames[posekey]= rgbcrop

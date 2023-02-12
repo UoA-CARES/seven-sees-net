@@ -16,78 +16,6 @@ from dataset.transforms import transform
 from torch.utils.data import DataLoader
 from model.seven_seas_net import SevenSeesNet
 
-wandb.init(entity="cares", project="seven-sees",
-           group="v1")
-
-device='cuda'
-
-work_dir = 'work_dirs/wlasl10/seven-seas-v1/'
-batch_size = 1
-
-os.makedirs(work_dir, exist_ok=True)
-
-transforms = transform()
-
-train_dataset = MultiModalDataset(ann_file='data/wlasl10/train_annotations.txt',
-                            root_dir='data/wlasl10/rawframes',
-                            clip_len=32,
-                            resolution=224,
-                            transforms = transforms,
-                            frame_interval=1,
-                            num_clips=1
-                            )
-
-test_dataset = MultiModalDataset(ann_file='data/wlasl10/test_annotations.txt',
-                            root_dir='data/wlasl10/rawframes',
-                            clip_len=32,
-                            resolution=224,
-                            transforms = transforms,
-                            frame_interval=1,
-                            num_clips=1
-                            )
-
-# Setting up dataloaders
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                    batch_size=batch_size,
-                                    shuffle=True,
-                                    num_workers=4,
-                                    pin_memory=True)
-
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                    batch_size=1,
-                                    shuffle=True,
-                                    num_workers=4,
-                                    pin_memory=True)
-
-
-
-
-model = SevenSeesNet()
-model.init_weights()
-
-# Specify optimizer
-optimizer = torch.optim.SGD(
-    model.parameters(), lr=0.000125, momentum=0.9, weight_decay=0.00001)
-
-# Specify Loss
-loss_cls = nn.CrossEntropyLoss()
-
-# Specify total epochs
-epochs = 100
-
-# Specify learning rate scheduler
-lr_scheduler = torch.optim.lr_scheduler.StepLR(
-    optimizer, step_size=120, gamma=0.1)
-
-scheduler_steplr = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[34, 84], gamma=0.1)
-scheduler = GradualWarmupScheduler(optimizer, multiplier=1, total_epoch=16, after_scheduler=scheduler_steplr)
-
-# Specify Loss
-loss_fn = nn.CrossEntropyLoss()
-
-# Setup wandb
-wandb.watch(model, log_freq=10)
-
 def top_k_accuracy(scores, labels, topk=(1, )):
     """Calculate top k accuracy score.
     Args:
@@ -208,39 +136,113 @@ def validate():
 
     return (avg_vloss, top1_acc, top5_acc)
 
+if __name__ == "__main__":
+    #wandb.init(entity="cares", project="seven-sees",
+    #          group="v1")
 
-# Train Loop
-best_vloss = 1_000_000.
+    device='cuda'
 
-# Transfer model to device
-model.to(device)
+    work_dir = 'work_dirs/wlasl10/seven-seas-v1/'
+    batch_size = 1
 
-for epoch in range(epochs):
-    # Turn on gradient tracking and do a forward pass
-    model.train(True)
-    avg_loss, learning_rate = train_one_epoch(epoch+1)
+    os.makedirs(work_dir, exist_ok=True)
 
-    # Turn off  gradients for reporting
-    model.train(False)
+    transforms = transform()
 
-    avg_vloss, top1_acc, top5_acc = validate()
+    train_dataset = MultiModalDataset(ann_file='data/wlasl10/train_annotations.txt',
+                                root_dir='data/wlasl10/rawframes',
+                                clip_len=32,#
+                                resolution=224,
+                                transforms = transforms,
+                                frame_interval=1,
+                                num_clips=1
+                                )
 
-    print(
-        f'top1_acc: {top1_acc:.4}, top5_acc: {top5_acc:.4}, train_loss: {avg_loss:.5}, val_loss: {avg_vloss:.5}')
+    test_dataset = MultiModalDataset(ann_file='data/wlasl10/test_annotations.txt',
+                                root_dir='data/wlasl10/rawframes',
+                                clip_len=32,
+                                resolution=224,
+                                transforms = transforms,
+                                frame_interval=1,
+                                num_clips=1
+                                )
 
-    # Track best performance, and save the model's state
-    if avg_vloss < best_vloss:
-        best_vloss = avg_vloss
-        model_path = work_dir + f'epoch_{epoch+1}.pth'
-        print(f'Saving checkpoint at {epoch+1} epochs...')
-        torch.save(model.state_dict(), model_path)
+    # Setting up dataloaders
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                        batch_size=batch_size,
+                                        shuffle=True,
+                                        num_workers=1,
+                                        pin_memory=True)
 
-     # Adjust learning rate
-    scheduler.step()
-    
-    # Track wandb
-    wandb.log({'train/loss': avg_loss,
-               'train/learning_rate': learning_rate,
-               'val/loss': avg_vloss,
-               'val/top1_accuracy': top1_acc,
-               'val/top5_accuracy': top5_acc})
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                        batch_size=1,
+                                        shuffle=True,
+                                        num_workers=1,
+                                        pin_memory=True)
+
+
+
+
+    model = SevenSeesNet()
+    model.init_weights()
+
+    # Specify optimizer
+    optimizer = torch.optim.SGD(
+        model.parameters(), lr=0.000125, momentum=0.9, weight_decay=0.00001)
+
+    # Specify Loss
+    loss_cls = nn.CrossEntropyLoss()
+
+    # Specify total epochs
+    epochs = 100
+
+    # Specify learning rate scheduler
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer, step_size=120, gamma=0.1)
+
+    scheduler_steplr = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[34, 84], gamma=0.1)
+    scheduler = GradualWarmupScheduler(optimizer, multiplier=1, total_epoch=16, after_scheduler=scheduler_steplr)
+
+    # Specify Loss
+    loss_fn = nn.CrossEntropyLoss()
+
+    # Setup wandb
+    #wandb.watch(model, log_freq=10)
+
+
+    # Train Loop
+    best_vloss = 1_000_000.
+
+    # Transfer model to device
+    model.to(device)
+
+    for epoch in range(epochs):
+        # Turn on gradient tracking and do a forward pass
+        model.train(True)
+        avg_loss, learning_rate = train_one_epoch(epoch+1)
+
+        # Turn off  gradients for reporting
+        model.train(False)
+
+        avg_vloss, top1_acc, top5_acc = validate()
+
+        print(
+            f'top1_acc: {top1_acc:.4}, top5_acc: {top5_acc:.4}, train_loss: {avg_loss:.5}, val_loss: {avg_vloss:.5}')
+
+        # Track best performance, and save the model's state
+        if avg_vloss < best_vloss:
+            best_vloss = avg_vloss
+            model_path = work_dir + f'epoch_{epoch+1}.pth'
+            print(f'Saving checkpoint at {epoch+1} epochs...')
+            torch.save(model.state_dict(), model_path)
+
+         # Adjust learning rate
+        scheduler.step()
+    '''    
+        # Track wandb
+        wandb.log({'train/loss': avg_loss,
+                   'train/learning_rate': learning_rate,
+                   'val/loss': avg_vloss,
+                   'val/top1_accuracy': top1_acc,
+                   'val/top5_accuracy': top5_acc})
+    '''
