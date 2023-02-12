@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch
 
 class MultiModalNeck(nn.Module):
-    def __init__(self):
+    def __init__(self, device='cuda'):
         super(MultiModalNeck, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool3d((1, 1, 1))
+        self.device = device
 
     def forward(self,
                 rgb=None,
@@ -16,7 +17,7 @@ class MultiModalNeck(nn.Module):
                 right_hand=None,
                 pose=None):
         
-        out = torch.tensor([])
+        out = torch.tensor([]).to(self.device)
         
         if rgb is not None:
             rgb = torch.flatten(self.avg_pool(rgb), start_dim=1)

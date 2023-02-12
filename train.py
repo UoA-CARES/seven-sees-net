@@ -16,13 +16,13 @@ from dataset.transforms import transform
 from torch.utils.data import DataLoader
 from model.seven_seas_net import SevenSeesNet
 
-try:
-    device = 'mps' if torch.backends.mps.is_available() else 'cpu'
-except:
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+wandb.init(entity="cares", project="seven-sees",
+           group="v1")
 
-work_dir = 'work_dirs/wlasl-dataset/'
-batch_size = 2
+device='cuda'
+
+work_dir = 'work_dirs/wlasl10/seven-seas-v1/'
+batch_size = 1
 
 os.makedirs(work_dir, exist_ok=True)
 
@@ -59,6 +59,9 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                     num_workers=4,
                                     pin_memory=True)
 
+
+
+
 model = SevenSeesNet()
 model.init_weights()
 
@@ -81,6 +84,9 @@ scheduler = GradualWarmupScheduler(optimizer, multiplier=1, total_epoch=16, afte
 
 # Specify Loss
 loss_fn = nn.CrossEntropyLoss()
+
+# Setup wandb
+wandb.watch(model, log_freq=10)
 
 def top_k_accuracy(scores, labels, topk=(1, )):
     """Calculate top k accuracy score.
@@ -117,7 +123,7 @@ def train_one_epoch(epoch_index, interval=5):
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
     for i, (rgb, _, face, left_hand, right_hand, depth, flow, pose, targets) in enumerate(train_loader):
-        rgb, face, left_hand, right_hand, depth, flow, pose, targets = rgb.to(device), face.to(device), left_hand.to(device), right_hand.to(device), depth.to(device), flow.to(device), pose.to(device), targets.to(device)
+        rgb, face, left_hand, right_hand, depth, flow, pose, targets = rgb.to(device), face.to(device),left_hand.to(device), right_hand.to(device), depth.to(device), flow.to(device), pose.to(device), targets.to(device)
 #         rgb = rgb.reshape((-1, ) + rgb.shape[2:])
 #         face = face.reshape((-1, ) + face.shape[2:])
 #         flow = flow.reshape((-1, ) + flow.shape[2:])
@@ -177,12 +183,6 @@ def validate():
     with torch.inference_mode():
         for i, (rgb, _, face, left_hand, right_hand, depth, flow, pose, targets)  in enumerate(test_loader):
             rgb, face, left_hand, right_hand, depth, flow, pose, targets = rgb.to(device), face.to(device), left_hand.to(device), right_hand.to(device), depth.to(device), flow.to(device), pose.to(device), targets.to(device)
-            rgb = rgb.reshape((-1, ) + rgb.shape[2:])
-            face = face.reshape((-1, ) + face.shape[2:])
-            flow = flow.reshape((-1, ) + flow.shape[2:])
-            left_hand = left_hand.reshape((-1, ) + left_hand.shape[2:])
-            right_hand = right_hand.reshape((-1, ) + right_hand.shape[2:])
-            depth = depth.reshape((-1, ) + depth.shape[2:])
             
             targets = targets.reshape(-1, )
 
@@ -223,17 +223,24 @@ for epoch in range(epochs):
     # Turn off  gradients for reporting
     model.train(False)
 
-#     avg_vloss, top1_acc, top5_acc = validate()
+    avg_vloss, top1_acc, top5_acc = validate()
 
-#     print(
-#         f'top1_acc: {top1_acc:.4}, top5_acc: {top5_acc:.4}, train_loss: {avg_loss:.5}, val_loss: {avg_vloss:.5}')
+    print(
+        f'top1_acc: {top1_acc:.4}, top5_acc: {top5_acc:.4}, train_loss: {avg_loss:.5}, val_loss: {avg_vloss:.5}')
 
-#     # Track best performance, and save the model's state
-#     if avg_vloss < best_vloss:
-#         best_vloss = avg_vloss
-#         model_path = work_dir + f'epoch_{epoch+1}.pth'
-#         print(f'Saving checkpoint at {epoch+1} epochs...')
-#         torch.save(model.state_dict(), model_path)
+    # Track best performance, and save the model's state
+    if avg_vloss < best_vloss:
+        best_vloss = avg_vloss
+        model_path = work_dir + f'epoch_{epoch+1}.pth'
+        print(f'Saving checkpoint at {epoch+1} epochs...')
+        torch.save(model.state_dict(), model_path)
 
      # Adjust learning rate
     scheduler.step()
+    
+    # Track wandb
+    wandb.log({'train/loss': avg_loss,
+               'train/learning_rate': learning_rate,
+               'val/loss': avg_vloss,
+               'val/top1_accuracy': top1_acc,
+               'val/top5_accuracy': top5_acc})
