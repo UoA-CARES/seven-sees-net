@@ -143,30 +143,28 @@ class transform:
             y0 = int(y0)
             y1 = int(y1)
             x0 = int(x0)             
-            
-            #ensure sqaure crop#
-            xwidth = x1-x0
-            ywidth = y1-y0
-            if(xwidth>ywidth):
-                xwidth = xwidth - (xwidth-ywidth)
-                x1 = x0 + xwidth
-            elif(ywidth>xwidth):
-                ywidth = ywidth - (ywidth-xwidth)
-                y1 = y0 + ywidth
-             
+
             ###########################################
             #img = cv2.rectangle(img, (x0,y0), (x1,y1), (40,100,0),1)
             #cv2.imshow("", img)
             #cv2.waitKey(0)
             
+            #crop image with bounding box
             img = img[x0:x1, y0:y1].copy()
-            if( img.shape[0] == 0 or img.shape[1] == 0):
+            newh, neww , _ = img.shape  
+            
+            #check img size not 0
+            if( newh == 0 or neww == 0):
                 img = np.zeros((1,1,3), np.uint8)
+                newh, neww , _ = img.shape  
+            #pad if not square
             if(pad):
-                padimage = np.zeros((h,w,3), np.uint8)
+                longestSize = max(newh,neww)
+                padimage = np.zeros((longestSize,longestSize,3), np.uint8)
                 
                 padh,padw , _ = img.shape
-                padimage[x0:x0+padw,y0:y0+padh] = img
+     
+                padimage[0:padh,0:padw] = img
                 
                 img = padimage.copy()
             # print(img.shape)

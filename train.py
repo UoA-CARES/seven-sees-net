@@ -184,7 +184,8 @@ if __name__ == "__main__":
 
 
     model = SevenSeesNet()
-    model.init_weights()
+    model.load_state_dict(torch.load("work_dirs/wlasl10/seven-seas-v1/epoch_5.pth"))
+    #model.init_weights()
 
     # Specify optimizer
     optimizer = torch.optim.SGD(
