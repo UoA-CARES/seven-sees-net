@@ -46,8 +46,8 @@ def train_one_epoch(epoch_index, interval=5):
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
-    for i, (rgb, _, _, _, _, _, _, _, targets)  in enumerate(train_loader):
-        rgb, targets = rgb.to(device), targets.to(device)
+    for i, (_, _, _, left_hand, _, _, _, _, targets)  in enumerate(train_loader):
+        left_hand, targets = left_hand.to(device), targets.to(device)
 
         targets = targets.reshape(-1, )
 
@@ -55,7 +55,7 @@ def train_one_epoch(epoch_index, interval=5):
         optimizer.zero_grad()
 
         # Make predictions for this batch
-        outputs = model(rgb)
+        outputs = model(left_hand)
 
         # Compute the loss and its gradients
         loss = loss_fn(outputs, targets)
@@ -93,12 +93,12 @@ def validate():
     print('Evaluating top_k_accuracy...')
 
     with torch.inference_mode():
-        for i, (rgb, _, _, _, _, _, _, _, vtargets)  in enumerate(test_loader):
-            rgb, vtargets = rgb.to(device), vtargets.to(device)
+        for i, (_, _, _, left_hand, _, _, _, _, vtargets)  in enumerate(test_loader):
+            left_hand, vtargets = left_hand.to(device), vtargets.to(device)
 
             vtargets = vtargets.reshape(-1, )
 
-            voutputs = model(rgb)
+            voutputs = model(left_hand)
 
             vloss = loss_fn(voutputs, vtargets)
             running_vloss += vloss
@@ -118,7 +118,7 @@ def validate():
 if __name__ == '__main__':
 
     wandb.init(entity="cares", project="seven-sees",
-            group="rgb-only")
+            group="left-hand-only")
 
     # Set up device agnostic code
     device= 'cuda'

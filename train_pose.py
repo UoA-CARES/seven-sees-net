@@ -6,10 +6,8 @@ import numpy as np
 
 from dataset.transforms import transform
 from dataset.dataset import MultiModalDataset
-from mmcv_model.mmcv_csn import ResNet3dCSN
-from mmcv_model.i3d_head import I3DHead
-from mmcv_model.cls_autoencoder import EncoderDecoder
 from mmcv_model.scheduler import GradualWarmupScheduler
+from model.pose_only import PoseOnly
 
 
 def top_k_accuracy(scores, labels, topk=(1, )):
@@ -46,8 +44,8 @@ def train_one_epoch(epoch_index, interval=5):
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
-    for i, (rgb, _, _, _, _, _, _, _, targets)  in enumerate(train_loader):
-        rgb, targets = rgb.to(device), targets.to(device)
+    for i, (_, _, _, _, _, _, _, pose, targets)  in enumerate(train_loader):
+        pose, targets = pose.to(device), targets.to(device)
 
         targets = targets.reshape(-1, )
 
@@ -55,7 +53,7 @@ def train_one_epoch(epoch_index, interval=5):
         optimizer.zero_grad()
 
         # Make predictions for this batch
-        outputs = model(rgb)
+        outputs = model(pose)
 
         # Compute the loss and its gradients
         loss = loss_fn(outputs, targets)
@@ -93,12 +91,12 @@ def validate():
     print('Evaluating top_k_accuracy...')
 
     with torch.inference_mode():
-        for i, (rgb, _, _, _, _, _, _, _, vtargets)  in enumerate(test_loader):
-            rgb, vtargets = rgb.to(device), vtargets.to(device)
+        for i, (_, _, _, _, _, _, _, pose, vtargets)  in enumerate(test_loader):
+            pose, vtargets = pose.to(device), vtargets.to(device)
 
             vtargets = vtargets.reshape(-1, )
 
-            voutputs = model(rgb)
+            voutputs = model(pose)
 
             vloss = loss_fn(voutputs, vtargets)
             running_vloss += vloss
@@ -118,14 +116,14 @@ def validate():
 if __name__ == '__main__':
 
     wandb.init(entity="cares", project="seven-sees",
-            group="rgb-only")
+            group="pose-only")
 
     # Set up device agnostic code
     device= 'cuda'
 
     # Configs
-    work_dir = 'work_dirs/seven-seas-v1-rgb/'
-    batch_size = 256
+    work_dir = 'work_dirs/seven-seas-v1-pose/'
+    batch_size = 32
 
 
     os.makedirs(work_dir, exist_ok=True)
@@ -155,41 +153,17 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                         batch_size=batch_size,
                                         shuffle=True,
-                                        num_workers=4,
+                                        num_workers=1,
                                         pin_memory=True)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                         batch_size=1,
                                         shuffle=True,
-                                        num_workers=4,
+                                        num_workers=1,
                                         pin_memory=True)
 
 
-    # set up model, loss, optimizer and scheduler
-    # Create a CSN model
-    encoder = ResNet3dCSN(
-        pretrained2d=False,
-        # pretrained=None,
-        pretrained='https://download.openmmlab.com/mmaction/recognition/csn/ircsn_from_scratch_r50_ig65m_20210617-ce545a37.pth',
-        depth=50,
-        with_pool2=False,
-        bottleneck_mode='ir',
-        norm_eval=True,
-        zero_init_residual=False,
-        bn_frozen=True
-    )
-
-    encoder.init_weights()
-
-    decoder = I3DHead(num_classes=400,
-                    in_channels=2048,
-                    spatial_type='avg',
-                    dropout_ratio=0.5,
-                    init_std=0.01)
-
-    decoder.init_weights()
-
-    model = EncoderDecoder(encoder, decoder)
+    model = PoseOnly()
 
     # # Load model checkpoint
     # checkpoint = torch.load(work_dir+'latest.pth')
