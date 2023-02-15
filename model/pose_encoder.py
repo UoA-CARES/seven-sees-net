@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class PoseEncoder(nn.Module):
-    def __init__(self, in_channels, out_channels, init_std=0.01, dropout_ratio=0.5):
+    def __init__(self, in_channels, out_channels, init_std=0.01, dropout_ratio=0.1):
         super(PoseEncoder, self).__init__()
         self.init_std = init_std
         self.fc1 = nn.Linear(in_channels, 1024)

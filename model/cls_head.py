@@ -10,7 +10,7 @@ class ClassifierHead(nn.Module):
         dropout_ratio (float): Probability of dropout layer. Default: 0.5.
     """
 
-    def __init__(self, in_features=2048, num_classes=400, init_std=0.01, dropout_ratio=0.5):
+    def __init__(self, in_features=2048, num_classes=400, init_std=0.01, dropout_ratio=0.1):
         super(ClassifierHead, self).__init__()
         self.init_std = init_std
         self.dropout = nn.Dropout(p=dropout_ratio)
