@@ -97,7 +97,8 @@ for path in paths: #loop through parent folders ie [train, val, test]
 
         for bboxn, humanbbox in enumerate(allhumanbboxes ): #loop through images in video folder [frame0, frame1, frame2]
             if(len(humanbbox[1])>0):
-                img = cv2.imread(cwd + os.sep + path + os.sep + folder + os.sep + humanbbox[0])            
+                img = cv2.imread(cwd + os.sep + path + os.sep + folder + os.sep + humanbbox[0])     
+                  
                 crop = img[largestbox[0]:largestbox[1],largestbox[2]:largestbox[3]]#cv2.rectangle(img, [x0,y0],[x1,y1], (100,40,20))
                 points = vitpose.inference(crop)    
   

@@ -76,9 +76,9 @@ def process_subset(subset_dir):
 
 if __name__ == '__main__':
     # Extract depth for wlasl
-    data = 'data/wlasl10/rawframes/'
+    data = 'data/wlasl/rawframes/'
     # subsets = ['train', 'test', 'val']
-    subsets = ['train', 'val']
+    subsets = ['train', 'val', 'test']
 
 
     for subset in subsets:

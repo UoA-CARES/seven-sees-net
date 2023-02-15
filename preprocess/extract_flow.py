@@ -110,9 +110,9 @@ def process_subset(subset_path):
 
 if __name__ == '__main__':
     # Extract flow for wlasl
-    data = 'data/wlasl10/rawframes/'
+    data = 'data/wlasl/rawframes/'
     # subsets = ['train', 'test', 'val']
-    subsets = ['val', 'train']
+    subsets = ['val', 'train', 'test']
     for subset in subsets:
         subset_dir = os.path.join(data, subset)
         process_subset(subset_dir)
