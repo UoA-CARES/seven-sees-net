@@ -4,13 +4,13 @@ import torch.nn as nn
 import wandb
 import numpy as np
 
-from torchvision import transforms
 from dataset.transforms import transform
-from model.scheduler import GradualWarmupScheduler
 from dataset.dataset import MultiModalDataset
-from dataset.transforms import transform
-from torch.utils.data import DataLoader
-from model.seven_seas_net import SevenSeesNet
+from mmcv_model.mmcv_csn import ResNet3dCSN
+from mmcv_model.i3d_head import I3DHead
+from mmcv_model.cls_autoencoder import EncoderDecoder
+from mmcv_model.scheduler import GradualWarmupScheduler
+
 
 def top_k_accuracy(scores, labels, topk=(1, )):
     """Calculate top k accuracy score.
@@ -28,6 +28,7 @@ def top_k_accuracy(scores, labels, topk=(1, )):
         match_array = np.logical_or.reduce(max_k_preds == labels, axis=1)
         topk_acc_score = match_array.sum() / match_array.shape[0]
         res[i] = topk_acc_score
+
     return res
 
 
@@ -45,28 +46,16 @@ def train_one_epoch(epoch_index, interval=5):
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
-    for i, (rgb, _, face, left_hand, right_hand, depth, flow, pose, targets) in enumerate(train_loader):
-        rgb, face, left_hand, right_hand, depth, flow, pose, targets = rgb.to(device), face.to(device),left_hand.to(device), right_hand.to(device), depth.to(device), flow.to(device), pose.to(device), targets.to(device)
-#         rgb = rgb.reshape((-1, ) + rgb.shape[2:])
-#         face = face.reshape((-1, ) + face.shape[2:])
-#         flow = flow.reshape((-1, ) + flow.shape[2:])
-#         left_hand = left_hand.reshape((-1, ) + left_hand.shape[2:])
-#         right_hand = right_hand.reshape((-1, ) + right_hand.shape[2:])
-#         depth = depth.reshape((-1, ) + depth.shape[2:])
-        
+    for i, (rgb, _, _, _, _, _, _, _, targets)  in enumerate(test_loader):
+        rgb, targets = rgb.to(device), targets.to(device)
+
         targets = targets.reshape(-1, )
 
         # Zero your gradients for every batch!
         optimizer.zero_grad()
 
         # Make predictions for this batch
-        outputs = model(rgb=rgb,
-                         depth=depth,
-                         flow=flow,
-                         face=face,
-                         left_hand=left_hand,
-                         right_hand=right_hand,
-                         pose=pose)
+        outputs = model(rgb)
 
         # Compute the loss and its gradients
         loss = loss_fn(outputs, targets)
@@ -104,24 +93,18 @@ def validate():
     print('Evaluating top_k_accuracy...')
 
     with torch.inference_mode():
-        for i, (rgb, _, face, left_hand, right_hand, depth, flow, pose, targets)  in enumerate(test_loader):
-            rgb, face, left_hand, right_hand, depth, flow, pose, targets = rgb.to(device), face.to(device), left_hand.to(device), right_hand.to(device), depth.to(device), flow.to(device), pose.to(device), targets.to(device)
-            
-            targets = targets.reshape(-1, )
+        for i, (rgb, _, _, _, _, _, _, _, vtargets)  in enumerate(test_loader):
+            rgb, vtargets = rgb.to(device), vtargets.to(device)
 
-            outputs = model(rgb=rgb,
-                             depth=depth,
-                             flow=flow,
-                             face=face,
-                             left_hand=left_hand,
-                             right_hand=right_hand,
-                             pose=pose)
+            vtargets = vtargets.reshape(-1, )
 
-            loss = loss_fn(outputs, targets)
-            running_vloss += loss
+            voutputs = model(rgb)
 
-            running_vacc += top_k_accuracy(outputs.detach().cpu().numpy(),
-                                           targets.detach().cpu().numpy(), topk=(1, 5))
+            vloss = loss_fn(voutputs, vtargets)
+            running_vloss += vloss
+
+            running_vacc += top_k_accuracy(voutputs.detach().cpu().numpy(),
+                                           vtargets.detach().cpu().numpy(), topk=(1, 5))
 
     avg_vloss = running_vloss / (i + 1)
 
@@ -131,16 +114,20 @@ def validate():
 
     return (avg_vloss, top1_acc, top5_acc)
 
-if __name__ == "__main__":
-    wandb.init(entity="cares",
-              project="seven-sees",
-              group="v1")
 
-    device='cuda'
+if __name__ == '__main__':
 
-    work_dir = 'work_dirs/wlasl/seven-seas-v1/'
-    batch_size = 1
-    startepoch = 121
+    # wandb.init(entity="cares", project="seven-sees",
+    #         group="rgb-only")
+
+    # Set up device agnostic code
+    device= 'cuda'
+
+    # Configs
+    work_dir = 'work_dirs/seven-seas-v1-rgb/'
+    batch_size = 64
+
+
     os.makedirs(work_dir, exist_ok=True)
 
     transforms_train = transform(mode = 'train')
@@ -168,56 +155,80 @@ if __name__ == "__main__":
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                         batch_size=batch_size,
                                         shuffle=True,
-                                        num_workers=1,
+                                        num_workers=4,
                                         pin_memory=True)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                         batch_size=1,
                                         shuffle=True,
-                                        num_workers=1,
+                                        num_workers=4,
                                         pin_memory=True)
 
 
+    # set up model, loss, optimizer and scheduler
+    # Create a CSN model
+    encoder = ResNet3dCSN(
+        pretrained2d=False,
+        # pretrained=None,
+        pretrained='https://download.openmmlab.com/mmaction/recognition/csn/ircsn_from_scratch_r50_ig65m_20210617-ce545a37.pth',
+        depth=50,
+        with_pool2=False,
+        bottleneck_mode='ir',
+        norm_eval=True,
+        zero_init_residual=False,
+        bn_frozen=True
+    )
 
+    encoder.init_weights()
 
-    model = SevenSeesNet()
+    decoder = I3DHead(num_classes=400,
+                    in_channels=2048,
+                    spatial_type='avg',
+                    dropout_ratio=0.5,
+                    init_std=0.01)
 
-    if(startepoch>0):
-        print("resuming from epoch %i"%startepoch)
-        model.load_state_dict(torch.load("work_dirs/wlasl/seven-seas-v1/epoch_" + str(startepoch) + ".pth"))
-    else:
-        model.init_weights()
+    decoder.init_weights()
+
+    model = EncoderDecoder(encoder, decoder)
+
+    # # Load model checkpoint
+    # checkpoint = torch.load(work_dir+'latest.pth')
+    # model.load_state_dict(checkpoint)
+
 
     # Specify optimizer
     optimizer = torch.optim.SGD(
-        model.parameters(), lr=0.0000125, momentum=0.9, weight_decay=0.000001)
+        model.parameters(), lr=0.000125, momentum=0.9, weight_decay=0.00001)
 
     # Specify Loss
     loss_cls = nn.CrossEntropyLoss()
 
     # Specify total epochs
-    epochs = 500
+    epochs = 100
 
     # Specify learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, step_size=120, gamma=0.1)
 
     scheduler_steplr = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[34, 84], gamma=0.1)
-    # scheduler = GradualWarmupScheduler(optimizer, multiplier=1, total_epoch=16, after_scheduler=scheduler_steplr)
-    scheduler = GradualWarmupScheduler(optimizer, multiplier=1, total_epoch=1, after_scheduler=scheduler_steplr)
-
+    scheduler = GradualWarmupScheduler(optimizer, multiplier=1, total_epoch=16, after_scheduler=scheduler_steplr)
 
     # Specify Loss
     loss_fn = nn.CrossEntropyLoss()
 
-    # Setup wandb
-    wandb.watch(model, log_freq=10)
 
+
+    # Setup wandb
+    # wandb.watch(model, log_freq=10)
+
+
+
+    # Train Loop
 
     # Transfer model to device
     model.to(device)
 
-    for epoch in range(startepoch,epochs,1):
+    for epoch in range(epochs):
         # Turn on gradient tracking and do a forward pass
         model.train(True)
         avg_loss, learning_rate = train_one_epoch(epoch+1)
@@ -235,12 +246,12 @@ if __name__ == "__main__":
         print(f'Saving checkpoint at {epoch+1} epochs...')
         torch.save(model.state_dict(), model_path)
 
-         # Adjust learning rate
+        # Adjust learning rate
         scheduler.step()
- 
+
         # Track wandb
-        wandb.log({'train/loss': avg_loss,
-                   'train/learning_rate': learning_rate,
-                   'val/loss': avg_vloss,
-                   'val/top1_accuracy': top1_acc,
-                   'val/top5_accuracy': top5_acc})
+        # wandb.log({'train/loss': avg_loss,
+        #         'train/learning_rate': learning_rate,
+        #         'val/loss': avg_vloss,
+        #         'val/top1_accuracy': top1_acc,
+        #         'val/top5_accuracy': top5_acc})

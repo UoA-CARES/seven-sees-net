@@ -2,13 +2,16 @@ import os
 import glob
 import torch
 import cv2
+import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
 import random
 from PIL import Image
 import numpy as np
+
 class transform:
-    def __init__(self):
-        pass
+    def __init__(self, mode='train'):
+        self.mode = mode # train or test (no augments)
+ 
     def rotation(self,frames, rotation, modalities):
         angle = random.randint(-rotation, rotation)
         for modality in modalities:
@@ -17,7 +20,6 @@ class transform:
                 for i, frame in enumerate(rgb):
                     frame = TF.rotate(frame, angle)
                     frames[modality][i] = frame
-
                 
         return frames
     def flip(self,frames, modalities):
@@ -54,6 +56,7 @@ class transform:
         brightness = (random.randrange(5,15)/10)
         hue = random.randrange(0,5)/100
         saturation = (random.randrange(5,15)/10)
+
         for modality in modalities:
             if(modality in frames):
                 rgb = frames[modality]
@@ -175,11 +178,13 @@ class transform:
             
         frames[posekey]= rgbcrop
         return frames
+        
     def __call__(self, frames):
         #rgb only transforms
-        frames = self.rgbtransforms(frames, ['rgb'])
-        frames = self.depthtransforms(frames, ['depth'])
-        frames = self.flowtransforms(frames, ['flow'])
+        if(self.mode=='train'):
+            frames = self.rgbtransforms(frames, ['rgb'])
+            frames = self.depthtransforms(frames, ['depth'])
+            frames = self.flowtransforms(frames, ['flow'])
         #crop human bounding box
         frames = self.crop(frames, 'body_bbox')
         frames = self.crop(frames, 'head')
@@ -188,6 +193,7 @@ class transform:
         #global transforms apllied identically to all modalities (rgb, depth, flow)
         #frames = self.rotation(frames, 30, modalities)  #NEEDS POSE ROTATION
         
-        frames = self.flip(frames, ['rgb','depth', 'flow', 'pose', 'body_bbox', 'head', 'right_hand','left_hand'])
+        if(self.mode == 'train'):
+            frames = self.flip(frames, ['rgb','depth', 'flow', 'pose', 'body_bbox', 'head', 'right_hand','left_hand'])
 
         return frames

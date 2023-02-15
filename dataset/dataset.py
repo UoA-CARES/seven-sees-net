@@ -59,6 +59,7 @@ class MultiModalDataset(Dataset):
         self.transforms = transforms
         self.resolution = resolution
         
+        self.normalise = transform.Normalize(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375])
 
         self.video_infos = self.load_annotations()
         self.read_pose = ReadPose()
@@ -184,6 +185,7 @@ class MultiModalDataset(Dataset):
         image_tensors = []
         for img in images:
             image_tensors.append(self.img2tensorTransforms(img).unsqueeze(dim=1))
+
         tensor = torch.cat(image_tensors, dim = 1)
         return tensor
     def pose2tensor(self, pose):
@@ -197,6 +199,7 @@ class MultiModalDataset(Dataset):
         
         tensor = torch.tensor(points)
         return tensor
+
     def __getitem__(self, idx):
         #['rgb','depth', 'flow', 'pose', 'body_bbox', 'head', 'right_hand','left_hand']
         results = self.load_video(idx=idx)
